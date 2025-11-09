@@ -1,0 +1,83 @@
+# -------------------------------------------------------------
+# Uber Ride Fare Prediction using Linear Regression & Random Forest
+# -------------------------------------------------------------
+
+# Step 1: Import Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+
+# Step 2: Load Dataset
+data = pd.read_csv(r"C:\Users\hp victus\Downloads\uber.csv\uber.csv")
+print("Dataset Loaded ✅")
+print(data.head())
+print(data.info())
+print(data.describe())
+
+# Step 3: Pre-process Dataset
+# Check and remove nulls
+print("Null values:\n", data.isnull().sum())
+data.dropna(inplace=True)
+
+# Convert pickup_datetime to datetime
+data['pickup_datetime'] = pd.to_datetime(data['pickup_datetime'])
+
+# Extract useful features
+data['pickup_hour'] = data['pickup_datetime'].dt.hour
+data['pickup_day'] = data['pickup_datetime'].dt.day
+data['pickup_month'] = data['pickup_datetime'].dt.month
+
+# Drop unnecessary columns
+data.drop(['key', 'pickup_datetime'], axis=1, inplace=True)
+
+# Step 4: Outlier Detection
+sns.boxplot(x=data['fare_amount'])
+plt.show()
+
+# Remove fare outliers
+data = data[(data['fare_amount'] > 0) & (data['fare_amount'] <= 500)]
+
+# Step 5: Correlation Analysis
+corr = data.corr()
+plt.figure(figsize=(10,6))
+sns.heatmap(corr, annot=True, cmap='coolwarm')
+plt.show()
+
+# Step 6: Split Dataset
+X = data.drop('fare_amount', axis=1)
+y = data['fare_amount']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Feature Scaling (optional for Linear Regression)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Step 7: Linear Regression
+lr = LinearRegression()
+lr.fit(X_train_scaled, y_train)
+y_pred_lr = lr.predict(X_test_scaled)
+
+print("\nLinear Regression Evaluation:")
+print("R2 Score:", r2_score(y_test, y_pred_lr))
+print("RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_lr)))
+
+# Step 8: Random Forest Regression
+rf = RandomForestRegressor(n_estimators=100, random_state=42)
+rf.fit(X_train, y_train)
+y_pred_rf = rf.predict(X_test)
+
+print("\nRandom Forest Evaluation:")
+print("R2 Score:", r2_score(y_test, y_pred_rf))
+print("RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_rf)))
+
+# Step 9: Model Comparison
+print("\n✅ Compare Linear Regression vs Random Forest based on R2 and RMSE")
